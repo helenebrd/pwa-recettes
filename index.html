@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Mes Recettes</title>
     
-<!-- PWA / Apple iOS Guidelines -->
+    <!-- PWA / Apple iOS Guidelines -->
     <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes"> <!-- Ajoutée pour supprimer l'alerte -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Recettes">
@@ -68,4 +68,30 @@
             <div class="converter-box">
                 <input type="number" id="conv-input" placeholder="Qté" class="ios-input small">
                 <select id="conv-from" class="ios-input small">
-                    <option
+                    <option value="cup">Cup(s)</option>
+                    <option value="oz">Oz</option>
+                    <option value="tbsp">Cuillère à soupe</option>
+                </select>
+                <span>=</span>
+                <span id="conv-result" class="conv-result">0 ml/g</span>
+            </div>
+            <button class="sheet-btn cancel" onclick="closeAllSheets()">Fermer</button>
+        </div>
+    </div>
+
+    <!-- Modale : Détail de la recette -->
+    <div class="bottom-sheet fullscreen" id="sheet-detail">
+        <div class="sheet-content full">
+            <div class="sheet-handle"></div>
+            <div id="recipe-detail-content"></div>
+            <button class="sheet-btn cancel" onclick="closeAllSheets()">Fermer</button>
+        </div>
+    </div>
+
+    <!-- Overlay d'assombrissement -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Lien vers le fichier JavaScript avec Firebase -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
