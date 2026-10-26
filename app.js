@@ -2,15 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
-// --- CONFIGURATION FIREBASE (À REMPLACER PAR VOS CLÉS) ---
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
   apiKey: "AIzaSyBhcFvis5NVPD8kDzSM3MfDdPU_OlDqjs0",
   authDomain: "recettes-app-b07b7.firebaseapp.com",
@@ -21,23 +13,16 @@ const firebaseConfig = {
   measurementId: "G-J87FFL7YK9"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-// Initialisation Firebase
+// Initialisation Firebase (utilisation de 'app' pour éviter le conflit de nom)
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const recipesCollection = collection(db, "recipes");
 
+// --- CONFIGURATION BACKEND RENDER ---
 const BACKEND_URL = "https://recettes-app-q6xl.onrender.com/api/scrape";
 let recipes = []; // Stockage local synchronisé avec le cloud
 
-// --- UI / Modales ---
+// --- UI / Modales (exposées globalement pour éviter les erreurs de scope) ---
 window.openSheet = function(id) {
     document.getElementById('overlay').classList.add('active');
     document.getElementById(id).classList.add('active');
@@ -48,115 +33,117 @@ window.closeAllSheets = function() {
     document.querySelectorAll('.bottom-sheet').forEach(sheet => sheet.classList.remove('active'));
 }
 
-document.getElementById('fab-add').addEventListener('click', () => openSheet('sheet-add-menu'));
-document.getElementById('btn-close-menu').addEventListener('click', closeAllSheets);
-document.getElementById('btn-show-url').addEventListener('click', () => { closeAllSheets(); setTimeout(() => openSheet('sheet-url'), 300); });
-document.getElementById('btn-converter').addEventListener('click', () => openSheet('sheet-converter'));
-document.getElementById('overlay').addEventListener('click', closeAllSheets);
+// --- GESTION DES ÉVÉNEMENTS DOM ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Bouton FAB (+) -> Ouvre le menu d'ajout
+    const fabAdd = document.getElementById('fab-add');
+    if (fabAdd) {
+        fabAdd.addEventListener('click', () => window.openSheet('sheet-add-menu'));
+    }
 
-// --- Rendu des recettes ---
-function renderRecipes(filter = 'Toutes') {
-    const list = document.getElementById('recipe-list');
-    list.innerHTML = '';
-    const filtered = filter === 'Toutes' ? recipes : recipes.filter(r => r.category === filter);
-    
-    filtered.forEach((r) => {
-        const card = document.createElement('div');
-        card.className = 'recipe-card';
-        card.innerHTML = `
-            <img src="${r.image || 'https://via.placeholder.com/300x200?text=Pas+d%27image'}" alt="${r.title}" loading="lazy">
-            <div class="info">
-                <h3>${r.title}</h3>
-                <p>${r.category || 'Non classé'}</p>
-            </div>
-        `;
-        card.addEventListener('click', () => showRecipeDetail(r));
-        list.appendChild(card);
-    });
-}
+    // Bouton Fermer le menu d'ajout
+    const btnCloseMenu = document.getElementById('btn-close-menu');
+    if (btnCloseMenu) {
+        btnCloseMenu.addEventListener('click', () => window.closeAllSheets());
+    }
 
-function showRecipeDetail(recipe) {
-    const content = document.getElementById('recipe-detail-content');
-    content.innerHTML = `
-        <div class="recipe-header">
-            <img src="${recipe.image || 'https://via.placeholder.com/300x200'}" alt="">
-            <h2>${recipe.title}</h2>
-        </div>
-        <div class="recipe-section">
-            <h3>Ingrédients</h3>
-            <ul>${recipe.ingredients.map(i => `<li>${i}</li>`).join('')}</ul>
-        </div>
-        <div class="recipe-section">
-            <h3>Préparation</h3>
-            <ol>${recipe.steps.map(s => `<li>${s}</li>`).join('')}</ol>
-        </div>
-    `;
-    openSheet('sheet-detail');
-}
+    // Bouton Overlay -> Ferme tout
+    const overlay = document.getElementById('overlay');
+    if (overlay) {
+        overlay.addEventListener('click', () => window.closeAllSheets());
+    }
 
-// --- Écouteur en temps réel de Firebase ---
+    // Bouton Afficher la modale URL
+    const btnShowUrl = document.getElementById('btn-show-url');
+    if (btnShowUrl) {
+        btnShowUrl.addEventListener('click', () => {
+            window.closeAllSheets();
+            window.openSheet('sheet-url');
+        });
+    }
+
+    // Bouton Convertisseur
+    const btnConverter = document.getElementById('btn-converter');
+    if (btnConverter) {
+        btnConverter.addEventListener('click', () => window.openSheet('sheet-converter'));
+    }
+
+    // Importation via URL (Backend Render + Gemini)
+    const btnImport = document.getElementById('btn-import');
+    if (btnImport) {
+        btnImport.addEventListener('click', async () => {
+            const urlInput = document.getElementById('import-url');
+            const loader = document.getElementById('import-loader');
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                alert("Veuillez entrer une URL valide.");
+                return;
+            }
+
+            if (loader) loader.style.display = 'block';
+
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                if (!response.ok) throw new Error("Erreur lors de l'extraction par le serveur.");
+
+                const recipeData = await response.json();
+
+                // Sauvegarde dans Firebase Firestore
+                await addDoc(recipesCollection, {
+                    ...recipeData,
+                    createdAt: new Date()
+                });
+
+                alert("Recette importée et sauvegardée avec succès !");
+                urlInput.value = '';
+                window.closeAllSheets();
+            } catch (error) {
+                console.error("Erreur d'import :", error);
+                alert("Impossible d'extraire la recette. Vérifiez l'URL.");
+            } finally {
+                if (loader) loader.style.display = 'none';
+            }
+        });
+    }
+});
+
+// --- SYNCHRONISATION EN TEMPS RÉEL (FIREBASE FIRESTORE) ---
 onSnapshot(recipesCollection, (snapshot) => {
     recipes = [];
     snapshot.forEach((doc) => {
         recipes.push({ id: doc.id, ...doc.data() });
     });
-    // On garde le filtre actif lors d'une mise à jour
-    const activeFilter = document.querySelector('.filter-btn.active')?.dataset.category || 'Toutes';
-    renderRecipes(activeFilter);
+    renderRecipes(recipes);
 });
 
-// --- Filtres ---
-document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        renderRecipes(e.target.dataset.category);
-    });
-});
+// --- AFFICHAGE DES RECETTES ---
+function renderRecipes(recipesArray) {
+    const recipeList = document.getElementById('recipe-list');
+    if (!recipeList) return;
 
-// --- Import IA depuis Backend ---
-document.getElementById('btn-import').addEventListener('click', async () => {
-    const url = document.getElementById('import-url').value;
-    if(!url) return alert("Veuillez entrer une URL");
-    
-    document.getElementById('import-loader').style.display = 'block';
-    
-    try {
-        const res = await fetch(BACKEND_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url })
-        });
-        
-        if(!res.ok) throw new Error("Erreur serveur");
-        const data = await res.json();
-        
-        // Ajout à Firebase (le onSnapshot mettra l'UI à jour automatiquement)
-        data.category = "Plats"; // Catégorie par défaut
-        data.createdAt = new Date().toISOString();
-        await addDoc(recipesCollection, data);
-        
-        closeAllSheets();
-        document.getElementById('import-url').value = '';
-        
-    } catch (err) {
-        alert("Erreur lors de l'extraction de la recette. La vidéo est peut-être privée.");
-        console.error(err);
-    } finally {
-        document.getElementById('import-loader').style.display = 'none';
+    recipeList.innerHTML = '';
+
+    if (recipesArray.length === 0) {
+        recipeList.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color: #888;">Aucune recette pour le moment. Cliquez sur le + pour en ajouter !</p>';
+        return;
     }
-});
 
-// --- Convertisseur de mesures ---
-document.getElementById('conv-input').addEventListener('input', updateConv);
-document.getElementById('conv-from').addEventListener('change', updateConv);
-
-function updateConv() {
-    const val = parseFloat(document.getElementById('conv-input').value) || 0;
-    const from = document.getElementById('conv-from').value;
-    let res = "";
-    if(from === 'cup') res = (val * 240) + " ml (ou g)";
-    if(from === 'oz') res = (val * 28.35).toFixed(1) + " g";
-    if(from === 'tbsp') res = (val * 15) + " ml/g";
-    document.getElementById('conv-result').innerText = res;
+    recipesArray.forEach((recipe) => {
+        const card = document.createElement('div');
+        card.className = 'recipe-card';
+        card.innerHTML = `
+            <img src="${recipe.image || 'https://via.placeholder.com/300'}" alt="${recipe.title || 'Recette'}">
+            <div class="recipe-info">
+                <h3>${recipe.title || 'Sans titre'}</h3>
+                <p>⏱️ ${recipe.time || 'N/C'} | 🍽️ ${recipe.servings || 'N/C'}</p>
+            </div>
+        `;
+        recipeList.appendChild(card);
+    });
 }
