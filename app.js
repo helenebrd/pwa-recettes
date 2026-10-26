@@ -38,11 +38,12 @@ const BACKEND_URL = "https://recettes-app-q6xl.onrender.com/api/scrape";
 let recipes = []; // Stockage local synchronisé avec le cloud
 
 // --- UI / Modales ---
-function openSheet(id) {
+window.openSheet = function(id) {
     document.getElementById('overlay').classList.add('active');
     document.getElementById(id).classList.add('active');
 }
-window.closeAllSheets = function() { // Rendu global pour les onclick HTML
+
+window.closeAllSheets = function() {
     document.getElementById('overlay').classList.remove('active');
     document.querySelectorAll('.bottom-sheet').forEach(sheet => sheet.classList.remove('active'));
 }
