@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Mes Recettes</title>
+    
+    <!-- PWA / Apple iOS Guidelines -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Recettes">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="ios-header">
+        <h1>Recettes</h1>
+        <button id="btn-converter" class="icon-btn">⚖️</button>
+    </header>
+
+    <nav class="filters" id="filters-container">
+        <button class="filter-btn active" data-category="Toutes">Toutes</button>
+        <button class="filter-btn" data-category="Entrées">Entrées</button>
+        <button class="filter-btn" data-category="Plats">Plats</button>
+        <button class="filter-btn" data-category="Desserts">Desserts</button>
+        <button class="filter-btn" data-category="Goûter">Goûter</button>
+        <button class="filter-btn" data-category="Boissons">Boissons</button>
+    </nav>
+
+    <main class="recipe-grid" id="recipe-list">
+        <!-- Les recettes s'afficheront ici -->
+    </main>
+
+    <!-- Floating Action Button -->
+    <button class="fab" id="fab-add">+</button>
+
+    <!-- Modale : Menu d'ajout -->
+    <div class="bottom-sheet" id="sheet-add-menu">
+        <div class="sheet-content">
+            <div class="sheet-handle"></div>
+            <h2>Ajouter une recette</h2>
+            <button class="sheet-btn" id="btn-show-url">Importer depuis une URL (IA)</button>
+            <button class="sheet-btn" id="btn-show-manual">Saisir manuellement</button>
+            <button class="sheet-btn cancel" id="btn-close-menu">Annuler</button>
+        </div>
+    </div>
+
+    <!-- Modale : Import URL -->
+    <div class="bottom-sheet" id="sheet-url">
+        <div class="sheet-content">
+            <div class="sheet-handle"></div>
+            <h2>Import Magique</h2>
+            <input type="url" id="import-url" placeholder="Collez l'URL (Marmiton, TikTok...)" class="ios-input">
+            <button class="sheet-btn primary" id="btn-import">Extraire avec l'IA</button>
+            <p id="import-loader" style="display:none; text-align:center;">Extraction en cours...</p>
+            <button class="sheet-btn cancel" onclick="closeAllSheets()">Annuler</button>
+        </div>
+    </div>
+
+    <!-- Modale : Convertisseur -->
+    <div class="bottom-sheet" id="sheet-converter">
+        <div class="sheet-content">
+            <div class="sheet-handle"></div>
+            <h2>Convertisseur</h2>
+            <div class="converter-box">
+                <input type="number" id="conv-input" placeholder="Qté" class="ios-input small">
+                <select id="conv-from" class="ios-input small">
+                    <option
